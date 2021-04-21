@@ -5,6 +5,12 @@
  */
 package tubt.view;
 
+import java.rmi.Naming;
+import javax.swing.JOptionPane;
+import tubt.dto.RegistrationDTO;
+import tubt.interfaces.RegistrationInterface;
+import tubt.interfaces.impl.RegistrationImpl;
+
 /**
  *
  * @author buith
@@ -14,8 +20,21 @@ public class MainView extends javax.swing.JFrame {
     /**
      * Creates new form mainView
      */
+    RegistrationInterface registrationInterface;
+    
     public MainView() {
         initComponents();
+        getRegistrations();
+    }
+
+    public void getRegistrations() {
+        try {
+        registrationInterface = (RegistrationInterface) Naming.lookup("rmi://localhost:1919/RegistrationServer");
+        } catch (Exception e) {
+            System.out.println("Error while connecting to server...");
+            e.printStackTrace();
+        }
+
     }
 
     /**
@@ -208,6 +227,11 @@ public class MainView extends javax.swing.JFrame {
 
         btnSave.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnSave.setText("Save");
+        btnSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveActionPerformed(evt);
+            }
+        });
 
         btnRemove.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnRemove.setText("Remove");
@@ -359,6 +383,37 @@ public class MainView extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
+        // TODO add your handling code here:
+        String registrationID = txtRegistrationID.getText();
+        String fullName = txtFullName.getText();
+        int age = Integer.parseInt(txtAge.getText());
+        boolean gender;
+        if(rbMale.isSelected()) {
+            gender = true;
+        } else {
+            gender = false;
+        }
+        String email = txtEmail.getText();
+        String phone = txtPhone.getText();
+        String address = taAddress.getText();
+        int numberOfMember = Integer.parseInt(txtNumberOfMember.getText());
+        int numberOfChildren = Integer.parseInt(txtChildren.getText());
+        int numberOfAdults = Integer.parseInt(txtAdults.getText());
+        RegistrationDTO dto = new RegistrationDTO(registrationID, fullName, age, gender, email, phone, address, numberOfMember, numberOfChildren, numberOfAdults);
+        try {
+        boolean addStatus = registrationInterface.createRegistration(dto);
+        if(addStatus) {
+            JOptionPane.showMessageDialog(this, "Add Success!");
+        } else {
+            JOptionPane.showMessageDialog(this, "Add Fail!");
+        }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erorr while adding...");
+            e.printStackTrace();
+        }
+    }//GEN-LAST:event_btnSaveActionPerformed
 
     /**
      * @param args the command line arguments
