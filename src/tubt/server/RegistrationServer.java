@@ -8,6 +8,7 @@ package tubt.server;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import tubt.interfaces.impl.RegistrationImpl;
+import tubt.utils.Constants;
 
 /**
  *
@@ -18,8 +19,8 @@ public class RegistrationServer {
     public static void main(String[] args) {
         try {
             RegistrationImpl registrationInterface = new RegistrationImpl();
-            LocateRegistry.createRegistry(1919);
-            Naming.bind("rmi://localhost:1919/RegistrationServer", registrationInterface);
+            LocateRegistry.createRegistry(2121);
+            Naming.bind(Constants.RMI_URL, registrationInterface);
             System.out.println("Server is running....");
         } catch (Exception e) {
             e.printStackTrace();

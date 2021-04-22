@@ -6,10 +6,15 @@
 package tubt.view;
 
 import java.rmi.Naming;
+import java.util.ArrayList;
+import java.util.Vector;
+import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 import tubt.dto.RegistrationDTO;
 import tubt.interfaces.RegistrationInterface;
 import tubt.interfaces.impl.RegistrationImpl;
+import tubt.utils.Constants;
 
 /**
  *
@@ -20,16 +25,64 @@ public class MainView extends javax.swing.JFrame {
     /**
      * Creates new form mainView
      */
-    RegistrationInterface registrationInterface;
-    
+    private RegistrationInterface registrationInterface;
+    private DefaultTableModel tblRegistrationModel;
+    private boolean isFindByID = false;
+    private boolean isAddNewOrUpdate = false;
+
     public MainView() {
         initComponents();
+        getConnectionToServer();
         getRegistrations();
     }
 
-    public void getRegistrations() {
+    
+    public void getConnectionToServer() {
         try {
-        registrationInterface = (RegistrationInterface) Naming.lookup("rmi://localhost:1919/RegistrationServer");
+            registrationInterface = (RegistrationInterface) Naming.lookup(Constants.RMI_URL);
+        } catch (Exception e) {
+            System.out.println("Error while connecting to server...");
+            e.printStackTrace();
+        }
+    }
+    
+    public void getRegistrations() {
+
+        try {
+            
+            tblRegistrationModel = new DefaultTableModel(new String[]{"ID", "Full Name", "Age", "Gender", "Phone", "Address"}, 0) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false; // or a condition at your choice with row and column
+                }
+            };
+            ArrayList<RegistrationDTO> registrationList = registrationInterface.findAllRegistrations();
+            for (RegistrationDTO dto : registrationList) {
+                Vector registrationData = new Vector();
+                String id = dto.getRegistrationID();
+                String fullName = dto.getFullName();
+                int age = dto.getAge();
+                String gender = ((dto.isGender()) ? "Male" : "Female");
+                //String email = dto.getEmail();
+                String phone = dto.getPhone();
+                String address = dto.getAddress();
+                //int numberOfMember = dto.getNumberOfMember();
+                //int numberOfChildren = dto.getNumberOfChildren();
+                //int numberOfAdults = dto.getNumberOfAdults();
+                registrationData.add(id);
+                registrationData.add(fullName);
+                registrationData.add(age);
+                registrationData.add(gender);
+                //registrationData.add(email);
+                registrationData.add(phone);
+                registrationData.add(address);
+                //registrationData.add(numberOfMember);
+                //registrationData.add(numberOfChildren);
+                //registrationData.add(numberOfAdults);
+                tblRegistrationModel.addRow(registrationData);
+            }
+            tblRegistration.setModel(tblRegistrationModel);
+            tblRegistration.updateUI();
         } catch (Exception e) {
             System.out.println("Error while connecting to server...");
             e.printStackTrace();
@@ -109,13 +162,18 @@ public class MainView extends javax.swing.JFrame {
             }
         ));
         tblRegistration.getTableHeader().setReorderingAllowed(false);
+        tblRegistration.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tblRegistrationMouseClicked(evt);
+            }
+        });
         jScrollPane1.setViewportView(tblRegistration);
 
         lblSortByName.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         lblSortByName.setText("Sort by Name: ");
 
         cbbSortBy.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
-        cbbSortBy.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cbbSortBy.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Descending", "Ascending" }));
 
         btnSearchByName.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnSearchByName.setText("Search by name");
@@ -224,6 +282,11 @@ public class MainView extends javax.swing.JFrame {
 
         btnAddNew.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnAddNew.setText("Add new");
+        btnAddNew.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAddNewActionPerformed(evt);
+            }
+        });
 
         btnSave.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnSave.setText("Save");
@@ -386,34 +449,164 @@ public class MainView extends javax.swing.JFrame {
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
         // TODO add your handling code here:
-        String registrationID = txtRegistrationID.getText();
-        String fullName = txtFullName.getText();
-        int age = Integer.parseInt(txtAge.getText());
+        String messError = "";
+        boolean invalid = false;
+        String registrationID = txtRegistrationID.getText().trim();
+        String fullName = txtFullName.getText().trim();
+        String ageText = txtAge.getText().trim();
         boolean gender;
-        if(rbMale.isSelected()) {
+        if (rbMale.isSelected()) {
             gender = true;
         } else {
             gender = false;
         }
-        String email = txtEmail.getText();
-        String phone = txtPhone.getText();
-        String address = taAddress.getText();
-        int numberOfMember = Integer.parseInt(txtNumberOfMember.getText());
-        int numberOfChildren = Integer.parseInt(txtChildren.getText());
-        int numberOfAdults = Integer.parseInt(txtAdults.getText());
-        RegistrationDTO dto = new RegistrationDTO(registrationID, fullName, age, gender, email, phone, address, numberOfMember, numberOfChildren, numberOfAdults);
-        try {
-        boolean addStatus = registrationInterface.createRegistration(dto);
-        if(addStatus) {
-            JOptionPane.showMessageDialog(this, "Add Success!");
+        String email = txtEmail.getText().trim();
+        String phone = txtPhone.getText().trim();
+        String address = taAddress.getText().trim();
+        String numberOfMemberText = txtNumberOfMember.getText().trim();
+        String numberOfChildrenText = txtChildren.getText().trim();
+        String numberOfAdultsText = txtAdults.getText().trim();
+        //check regis id
+        if (registrationID.length() > 10 || registrationID.isEmpty() || !registrationID.matches(Constants.ID_REGEX)) {
+            messError = "ID: Max length is 10, not contains special characters!";
+            invalid = true;
+        }
+        //check regis fullName
+        if (fullName.length() > 50 || fullName.isEmpty()) {
+            messError = "FullName: Max length is 50";
+            invalid = true;
+        }
+        //check age
+        if (ageText.isEmpty() || !ageText.matches(Constants.NUMBER_REGEX)) {
+            messError = "Age: must be >= 0";
+            invalid = true;
+        }
+        //check email
+        if (email.length() > 30 || email.isEmpty() || !email.matches(Constants.EMAIL_REGEX)) {
+            messError = "Email: Max length is 30, contains only one '@' character, do not contain spectial characters (!, #, $)";
+            invalid = true;
+        }
+        //check phone
+        if (phone.length() > 15 || phone.isEmpty() || !phone.matches(Constants.NUMBER_REGEX)) {
+            messError = "Phone: Max length is 15, contain numeric characters only (0-9)";
+            invalid = true;
+        }
+        //check number of member
+        if (numberOfMemberText.isEmpty() || !numberOfMemberText.matches(Constants.NUMBER_REGEX)) {
+            messError = "Number of member: Must be >= 0";
+            invalid = true;
+        }
+        //check number of children
+        if (numberOfChildrenText.isEmpty() || !numberOfChildrenText.matches(Constants.NUMBER_REGEX)) {
+            messError = "Number of children: Must be >= 0";
+            invalid = true;
+        }
+        //check number of adults 
+        if (numberOfAdultsText.isEmpty() || !numberOfAdultsText.matches(Constants.NUMBER_REGEX)) {
+            messError = "Number of adults: Must be >= 0";
+            invalid = true;
+        }
+
+        if (invalid) {
+            JOptionPane.showMessageDialog(this, "Invalid input: \n" + messError);
         } else {
-            JOptionPane.showMessageDialog(this, "Add Fail!");
+            int age = Integer.valueOf(ageText);
+            int numberOfMember = Integer.valueOf(numberOfMemberText);
+            int numberOfChildren = Integer.valueOf(numberOfChildrenText);
+            int numberOfAdults = Integer.valueOf(numberOfAdultsText);
+            if (numberOfAdults + numberOfChildren != numberOfMember) {
+
+                JOptionPane.showMessageDialog(this, "Please enter the correct number of member!");
+            } else {
+                //add new mode
+                if (isAddNewOrUpdate) {
+                    try {
+                        
+                        RegistrationDTO dto = new RegistrationDTO(registrationID, fullName, age, gender, email, phone, address, numberOfMember, numberOfChildren, numberOfAdults);
+                        //registrationInterface = (RegistrationInterface) Naming.lookup(Constants.RMI_URL);
+                        boolean created = registrationInterface.createRegistration(dto);
+                        if (created) {
+                            txtRegistrationID.setText("");
+                            txtRegistrationID.setEditable(true);
+                            txtFullName.setText("");
+                            txtAge.setText("");
+                            grSex.clearSelection();
+                            txtEmail.setText("");
+                            txtPhone.setText("");
+                            taAddress.setText("");
+                            txtNumberOfMember.setText("");
+                            txtChildren.setText("");
+                            txtAdults.setText("");
+                            getRegistrations();
+                            tblRegistration.updateUI();
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Add Failed!");
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(this, "Cannot add!");
+                    }
+                } else { //save mode
+
+                }
+            }
+
         }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Erorr while adding...");
-            e.printStackTrace();
-        }
+
+
     }//GEN-LAST:event_btnSaveActionPerformed
+
+    private void tblRegistrationMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblRegistrationMouseClicked
+        // TODO add your handling code here:
+        isFindByID = true;
+        int selectedRow = tblRegistration.getSelectedRow();
+        String selectedId = (String) tblRegistration.getValueAt(selectedRow, 0);
+
+        if (isFindByID) {
+            try {
+                RegistrationDTO dto = registrationInterface.findByRegistrationID(selectedId);
+                txtRegistrationID.setText(dto.getRegistrationID());
+                txtRegistrationID.setEditable(false);
+                txtFullName.setText(dto.getFullName());
+                txtAge.setText(Integer.toString(dto.getAge()));
+                if (dto.isGender()) {
+                    rbMale.setSelected(true);
+                    rbFemale.setSelected(false);
+
+                } else {
+                    rbMale.setSelected(false);
+                    rbFemale.setSelected(true);
+                }
+                txtEmail.setText(dto.getEmail());
+                txtPhone.setText(dto.getPhone());
+                taAddress.setText(dto.getAddress());
+                txtNumberOfMember.setText(Integer.toString(dto.getNumberOfMember()));
+                txtChildren.setText(Integer.toString(dto.getNumberOfChildren()));
+                txtAdults.setText(Integer.toString(dto.getNumberOfAdults()));
+
+            } catch (Exception e) {
+                System.out.println("Cannot find any Registration by this ID!");
+                e.printStackTrace();
+            }
+        }
+    }//GEN-LAST:event_tblRegistrationMouseClicked
+
+    private void btnAddNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddNewActionPerformed
+        // TODO add your handling code here:
+        isAddNewOrUpdate = true;
+        txtRegistrationID.setText("");
+        txtRegistrationID.setEditable(true);
+        txtFullName.setText("");
+        txtAge.setText("");
+        grSex.clearSelection();
+        txtEmail.setText("");
+        txtPhone.setText("");
+        taAddress.setText("");
+        txtNumberOfMember.setText("");
+        txtChildren.setText("");
+        txtAdults.setText("");
+    }//GEN-LAST:event_btnAddNewActionPerformed
 
     /**
      * @param args the command line arguments
