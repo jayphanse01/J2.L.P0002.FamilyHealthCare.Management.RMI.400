@@ -5,10 +5,18 @@
  */
 package tubt.view;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.rmi.Naming;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Vector;
 import java.util.regex.Pattern;
+import javafx.scene.input.KeyCode;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import tubt.dto.RegistrationDTO;
@@ -27,8 +35,10 @@ public class MainView extends javax.swing.JFrame {
      */
     private RegistrationInterface registrationInterface;
     private DefaultTableModel tblRegistrationModel;
+    private DefaultTableModel tblRegistrationSearchModel;
     private boolean isFindByID = false;
-    private boolean isAddNewOrUpdate = false;
+    private boolean isDelete = false;
+    private boolean isAddNewOrUpdate = true;
 
     public MainView() {
         initComponents();
@@ -36,8 +46,7 @@ public class MainView extends javax.swing.JFrame {
         getRegistrations();
     }
 
-    
-    public void getConnectionToServer() {
+    private void getConnectionToServer() {
         try {
             registrationInterface = (RegistrationInterface) Naming.lookup(Constants.RMI_URL);
         } catch (Exception e) {
@@ -45,17 +54,18 @@ public class MainView extends javax.swing.JFrame {
             e.printStackTrace();
         }
     }
-    
-    public void getRegistrations() {
+
+    private void getRegistrations() {
 
         try {
-            
+
             tblRegistrationModel = new DefaultTableModel(new String[]{"ID", "Full Name", "Age", "Gender", "Phone", "Address"}, 0) {
                 @Override
                 public boolean isCellEditable(int row, int column) {
                     return false; // or a condition at your choice with row and column
                 }
             };
+
             ArrayList<RegistrationDTO> registrationList = registrationInterface.findAllRegistrations();
             for (RegistrationDTO dto : registrationList) {
                 Vector registrationData = new Vector();
@@ -84,7 +94,7 @@ public class MainView extends javax.swing.JFrame {
             tblRegistration.setModel(tblRegistrationModel);
             tblRegistration.updateUI();
         } catch (Exception e) {
-            System.out.println("Error while connecting to server...");
+            System.out.println("Cannot load data to table...");
             e.printStackTrace();
         }
 
@@ -143,7 +153,7 @@ public class MainView extends javax.swing.JFrame {
         jTextField7.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setLocation(new java.awt.Point(100, 100));
+        setLocation(new java.awt.Point(0, 0));
 
         lblTitle.setFont(new java.awt.Font("Gill Sans MT", 0, 36)); // NOI18N
         lblTitle.setText("Family Healthcare Management");
@@ -152,15 +162,23 @@ public class MainView extends javax.swing.JFrame {
 
         tblRegistration.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "Title 1", "Title 2", "Title 3", "Title 4", "Title 5", "Title 6"
             }
-        ));
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
         tblRegistration.getTableHeader().setReorderingAllowed(false);
         tblRegistration.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -174,15 +192,30 @@ public class MainView extends javax.swing.JFrame {
 
         cbbSortBy.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         cbbSortBy.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Descending", "Ascending" }));
+        cbbSortBy.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbbSortByActionPerformed(evt);
+            }
+        });
 
         btnSearchByName.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnSearchByName.setText("Search by name");
+        btnSearchByName.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSearchByNameActionPerformed(evt);
+            }
+        });
 
         txtSearchByName.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         txtSearchByName.setPreferredSize(new java.awt.Dimension(72, 23));
 
         btnGetAllData.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnGetAllData.setText("Get all Data");
+        btnGetAllData.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGetAllDataActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout mainPartLayout = new javax.swing.GroupLayout(mainPart);
         mainPart.setLayout(mainPartLayout);
@@ -298,11 +331,22 @@ public class MainView extends javax.swing.JFrame {
 
         btnRemove.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnRemove.setText("Remove");
+        btnRemove.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRemoveActionPerformed(evt);
+            }
+        });
 
         btnFindByID.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnFindByID.setText("Find by ID");
+        btnFindByID.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnFindByIDActionPerformed(evt);
+            }
+        });
 
         taAddress.setColumns(20);
+        taAddress.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         taAddress.setRows(5);
         jScrollPane3.setViewportView(taAddress);
 
@@ -449,6 +493,7 @@ public class MainView extends javax.swing.JFrame {
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
         // TODO add your handling code here:
+
         String messError = "";
         boolean invalid = false;
         String registrationID = txtRegistrationID.getText().trim();
@@ -521,11 +566,44 @@ public class MainView extends javax.swing.JFrame {
                 //add new mode
                 if (isAddNewOrUpdate) {
                     try {
-                        
+                        System.out.println(checkDuplicateID(registrationID));
+                        if (checkDuplicateID(registrationID) == true) {
+
+                            JOptionPane.showMessageDialog(this, "ID " + registrationID + " has been exist!");
+                        } else {
+                            RegistrationDTO dto = new RegistrationDTO(registrationID, fullName, age, gender, email, phone, address, numberOfMember, numberOfChildren, numberOfAdults);
+                            //registrationInterface = (RegistrationInterface) Naming.lookup(Constants.RMI_URL);
+                            boolean created = registrationInterface.createRegistration(dto);
+                            if (created) {
+                                txtRegistrationID.setText("");
+                                txtRegistrationID.setEditable(true);
+                                txtFullName.setText("");
+                                txtAge.setText("");
+                                grSex.clearSelection();
+                                txtEmail.setText("");
+                                txtPhone.setText("");
+                                taAddress.setText("");
+                                txtNumberOfMember.setText("");
+                                txtChildren.setText("");
+                                txtAdults.setText("");
+                                getRegistrations();
+                                tblRegistration.updateUI();
+                                JOptionPane.showMessageDialog(this, "Add Success!");
+                            } else {
+                                JOptionPane.showMessageDialog(this, "Add Failed!");
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(this, "Cannot add!");
+                    }
+
+                } else { //save mode
+                    try {
                         RegistrationDTO dto = new RegistrationDTO(registrationID, fullName, age, gender, email, phone, address, numberOfMember, numberOfChildren, numberOfAdults);
-                        //registrationInterface = (RegistrationInterface) Naming.lookup(Constants.RMI_URL);
-                        boolean created = registrationInterface.createRegistration(dto);
-                        if (created) {
+
+                        boolean updated = registrationInterface.updateRegistration(dto);
+                        if (updated) {
                             txtRegistrationID.setText("");
                             txtRegistrationID.setEditable(true);
                             txtFullName.setText("");
@@ -539,16 +617,14 @@ public class MainView extends javax.swing.JFrame {
                             txtAdults.setText("");
                             getRegistrations();
                             tblRegistration.updateUI();
+                            JOptionPane.showMessageDialog(this, "Update Success!");
                         } else {
-                            JOptionPane.showMessageDialog(this, "Add Failed!");
+                            JOptionPane.showMessageDialog(this, "Update Failed!");
                         }
-
                     } catch (Exception e) {
                         e.printStackTrace();
-                        JOptionPane.showMessageDialog(this, "Cannot add!");
+                        JOptionPane.showMessageDialog(this, "Cannot update...");
                     }
-                } else { //save mode
-
                 }
             }
 
@@ -557,15 +633,117 @@ public class MainView extends javax.swing.JFrame {
 
     }//GEN-LAST:event_btnSaveActionPerformed
 
+
     private void tblRegistrationMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblRegistrationMouseClicked
         // TODO add your handling code here:
         isFindByID = true;
+        isAddNewOrUpdate = false;
+        isDelete = true;
         int selectedRow = tblRegistration.getSelectedRow();
         String selectedId = (String) tblRegistration.getValueAt(selectedRow, 0);
 
+        try {
+            RegistrationDTO dto = registrationInterface.findByRegistrationID(selectedId);
+            txtRegistrationID.setText(dto.getRegistrationID());
+            txtRegistrationID.setEditable(false);
+            txtFullName.setText(dto.getFullName());
+            txtAge.setText(Integer.toString(dto.getAge()));
+            if (dto.isGender()) {
+                rbMale.setSelected(true);
+                rbFemale.setSelected(false);
+
+            } else {
+                rbMale.setSelected(false);
+                rbFemale.setSelected(true);
+            }
+            txtEmail.setText(dto.getEmail());
+            txtPhone.setText(dto.getPhone());
+            taAddress.setText(dto.getAddress());
+            txtNumberOfMember.setText(Integer.toString(dto.getNumberOfMember()));
+            txtChildren.setText(Integer.toString(dto.getNumberOfChildren()));
+            txtAdults.setText(Integer.toString(dto.getNumberOfAdults()));
+
+        } catch (Exception e) {
+            System.out.println("");
+            e.printStackTrace();
+        }
+
+    }//GEN-LAST:event_tblRegistrationMouseClicked
+
+    private void btnAddNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddNewActionPerformed
+        // TODO add your handling code here:
+        isAddNewOrUpdate = true;
+        txtRegistrationID.setText("");
+        txtRegistrationID.setEditable(true);
+        txtFullName.setText("");
+        txtAge.setText("");
+        grSex.clearSelection();
+        txtEmail.setText("");
+        txtPhone.setText("");
+        taAddress.setText("");
+        txtNumberOfMember.setText("");
+        txtChildren.setText("");
+        txtAdults.setText("");
+    }//GEN-LAST:event_btnAddNewActionPerformed
+
+    private void btnRemoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRemoveActionPerformed
+        // TODO add your handling code here:
+        String id = txtRegistrationID.getText();
+        int confirm = JOptionPane.showConfirmDialog(this, "Do you want to remove this registration?");
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (isDelete) {
+                try {
+                    boolean deleted = registrationInterface.removeRegistration(id);
+                    if (deleted) {
+                        txtRegistrationID.setText("");
+                        txtRegistrationID.setEditable(true);
+                        txtFullName.setText("");
+                        txtAge.setText("");
+                        grSex.clearSelection();
+                        txtEmail.setText("");
+                        txtPhone.setText("");
+                        taAddress.setText("");
+                        txtNumberOfMember.setText("");
+                        txtChildren.setText("");
+                        txtAdults.setText("");
+                        getRegistrations();
+                        tblRegistration.updateUI();
+                        JOptionPane.showMessageDialog(this, "Remove Success!");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Remove Fail!");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Error while deleting...");
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Nothing to Remove!");
+            }
+        } else {
+            txtRegistrationID.setText("");
+            txtRegistrationID.setEditable(true);
+            txtFullName.setText("");
+            txtAge.setText("");
+            grSex.clearSelection();
+            txtEmail.setText("");
+            txtPhone.setText("");
+            taAddress.setText("");
+            txtNumberOfMember.setText("");
+            txtChildren.setText("");
+            txtAdults.setText("");
+            getRegistrations();
+            tblRegistration.updateUI();
+        }
+    }//GEN-LAST:event_btnRemoveActionPerformed
+
+    private void btnFindByIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFindByIDActionPerformed
+        // TODO add your handling code here:
+        isFindByID = true;
+        String id = txtRegistrationID.getText();
         if (isFindByID) {
             try {
-                RegistrationDTO dto = registrationInterface.findByRegistrationID(selectedId);
+                RegistrationDTO dto = registrationInterface.findByRegistrationID(id);
+                JOptionPane.showMessageDialog(this, "Found Success!");
                 txtRegistrationID.setText(dto.getRegistrationID());
                 txtRegistrationID.setEditable(false);
                 txtFullName.setText(dto.getFullName());
@@ -586,15 +764,60 @@ public class MainView extends javax.swing.JFrame {
                 txtAdults.setText(Integer.toString(dto.getNumberOfAdults()));
 
             } catch (Exception e) {
-                System.out.println("Cannot find any Registration by this ID!");
                 e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Cannot find!");
             }
         }
-    }//GEN-LAST:event_tblRegistrationMouseClicked
+    }//GEN-LAST:event_btnFindByIDActionPerformed
 
-    private void btnAddNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddNewActionPerformed
+    private void btnSearchByNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchByNameActionPerformed
         // TODO add your handling code here:
-        isAddNewOrUpdate = true;
+        String searchName = txtSearchByName.getText();
+        if (searchName.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nothing to Search!");
+        } else {
+            try {
+                tblRegistrationSearchModel = new DefaultTableModel(new String[]{"ID", "Full Name", "Age", "Gender", "Phone", "Address"}, 0) {
+                    @Override
+                    public boolean isCellEditable(int row, int column) {
+                        return false; // or a condition at your choice with row and column
+                    }
+                };
+                ArrayList<RegistrationDTO> registrationList = registrationInterface.findAllRegistrations();
+                for (RegistrationDTO dto : registrationList) {
+                    Vector searchData = new Vector();
+                    String id = dto.getRegistrationID();
+                    String fullName = dto.getFullName();
+                    int age = dto.getAge();
+                    String gender = ((dto.isGender()) ? "Male" : "Female");
+
+                    String phone = dto.getPhone();
+                    String address = dto.getAddress();
+                    if (fullName.contains(searchName)) {
+                        searchData.add(id);
+                        searchData.add(fullName);
+                        searchData.add(age);
+                        searchData.add(gender);
+
+                        searchData.add(phone);
+                        searchData.add(address);
+                        System.out.println(searchData);
+                        tblRegistrationSearchModel.addRow(searchData);
+                    }
+                }
+
+                tblRegistration.setModel(tblRegistrationSearchModel);
+                tblRegistration.updateUI();
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Cannot Search!");
+            }
+        }
+    }//GEN-LAST:event_btnSearchByNameActionPerformed
+
+    private void btnGetAllDataActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGetAllDataActionPerformed
+        // TODO add your handling code here:
+        getRegistrations();
         txtRegistrationID.setText("");
         txtRegistrationID.setEditable(true);
         txtFullName.setText("");
@@ -606,7 +829,125 @@ public class MainView extends javax.swing.JFrame {
         txtNumberOfMember.setText("");
         txtChildren.setText("");
         txtAdults.setText("");
-    }//GEN-LAST:event_btnAddNewActionPerformed
+    }//GEN-LAST:event_btnGetAllDataActionPerformed
+
+    private void cbbSortByActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbbSortByActionPerformed
+        // TODO add your handling code here:
+        String sortBy = cbbSortBy.getSelectedItem().toString();
+        if (sortBy.equals("Ascending")) {
+            try {
+                ArrayList<RegistrationDTO> dto = registrationInterface.findAllRegistrations();
+                sortAscendingByRegistrationName(dto);
+                txtRegistrationID.setText("");
+                txtRegistrationID.setEditable(true);
+                txtFullName.setText("");
+                txtAge.setText("");
+                grSex.clearSelection();
+                txtEmail.setText("");
+                txtPhone.setText("");
+                taAddress.setText("");
+                txtNumberOfMember.setText("");
+                txtChildren.setText("");
+                txtAdults.setText("");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Cannot sort ascending...");
+            }
+        } else if (sortBy.equals("Descending")) {
+            try {
+                ArrayList<RegistrationDTO> dto = registrationInterface.findAllRegistrations();
+                sortDescendingByRegistrationName(dto);
+                txtRegistrationID.setText("");
+                txtRegistrationID.setEditable(true);
+                txtFullName.setText("");
+                txtAge.setText("");
+                grSex.clearSelection();
+                txtEmail.setText("");
+                txtPhone.setText("");
+                taAddress.setText("");
+                txtNumberOfMember.setText("");
+                txtChildren.setText("");
+                txtAdults.setText("");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Cannot sort descending...");
+            }
+        }
+    }//GEN-LAST:event_cbbSortByActionPerformed
+
+    private void sortAscendingByRegistrationName(ArrayList<RegistrationDTO> regisList) {
+        Collections.sort(regisList, new Comparator<RegistrationDTO>() {
+            @Override
+            public int compare(RegistrationDTO o1, RegistrationDTO o2) {
+                return o1.getFullName().compareTo(o2.getFullName());
+            }
+        });
+        tblRegistrationModel.setRowCount(0);
+        for (RegistrationDTO dto : regisList) {
+            Vector searchData = new Vector();
+            String id = dto.getRegistrationID();
+            String fullName = dto.getFullName();
+            int age = dto.getAge();
+            String gender = ((dto.isGender()) ? "Male" : "Female");
+            String phone = dto.getPhone();
+            String address = dto.getAddress();
+            searchData.add(id);
+            searchData.add(fullName);
+            searchData.add(age);
+            searchData.add(gender);
+            searchData.add(phone);
+            searchData.add(address);
+            //System.out.println(searchData);
+            tblRegistrationModel.addRow(searchData);
+        }
+        tblRegistration.setModel(tblRegistrationModel);
+        tblRegistration.updateUI();
+    }
+
+    private void sortDescendingByRegistrationName(ArrayList<RegistrationDTO> regisList) {
+        Collections.sort(regisList, new Comparator<RegistrationDTO>() {
+            @Override
+            public int compare(RegistrationDTO o1, RegistrationDTO o2) {
+                return o2.getFullName().compareTo(o1.getFullName());
+            }
+
+        });
+        tblRegistrationModel.setRowCount(0);
+        for (RegistrationDTO dto : regisList) {
+            Vector searchData = new Vector();
+            String id = dto.getRegistrationID();
+            String fullName = dto.getFullName();
+            int age = dto.getAge();
+            String gender = ((dto.isGender()) ? "Male" : "Female");
+            String phone = dto.getPhone();
+            String address = dto.getAddress();
+            searchData.add(id);
+            searchData.add(fullName);
+            searchData.add(age);
+            searchData.add(gender);
+            searchData.add(phone);
+            searchData.add(address);
+            //System.out.println(searchData);
+            tblRegistrationModel.addRow(searchData);
+        }
+        tblRegistration.setModel(tblRegistrationModel);
+        tblRegistration.updateUI();
+    }
+
+    private boolean checkDuplicateID(String id) {
+        boolean check = false;
+        //System.out.println(tblRegistrationModel.getRowCount());
+        for (int i = 0; i < tblRegistrationModel.getRowCount(); i++) {
+            String regisID = (String) tblRegistration.getValueAt(i, 0);
+            //System.out.println("ID: " + regisID);
+            if (id.equals(regisID)) {
+                return check = true;
+            }
+        }
+        return false;
+    }
 
     /**
      * @param args the command line arguments

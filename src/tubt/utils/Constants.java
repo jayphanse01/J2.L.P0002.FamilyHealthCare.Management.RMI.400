@@ -11,7 +11,7 @@ package tubt.utils;
  */
 public class Constants {
     
-    public static final String RMI_URL = "rmi://localhost:2121/RegistrationServer";
+    public static final String RMI_URL = "rmi://localhost:1919/RegistrationServer";
     public static final String ID_REGEX = "\\w+";
     public static final String EMAIL_REGEX = "^[a-zA-Z][\\w-]+@([\\w]+\\.[\\w]+|[\\w]+\\.[\\w]{2,}\\.[\\w]{2,})$";
     public static final String NUMBER_REGEX = "\\d+";

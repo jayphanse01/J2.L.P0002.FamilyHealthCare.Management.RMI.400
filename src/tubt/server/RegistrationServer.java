@@ -7,6 +7,7 @@ package tubt.server;
 
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
+import javax.swing.JOptionPane;
 import tubt.interfaces.impl.RegistrationImpl;
 import tubt.utils.Constants;
 
@@ -19,11 +20,12 @@ public class RegistrationServer {
     public static void main(String[] args) {
         try {
             RegistrationImpl registrationInterface = new RegistrationImpl();
-            LocateRegistry.createRegistry(2121);
+            LocateRegistry.createRegistry(1919);
             Naming.bind(Constants.RMI_URL, registrationInterface);
-            System.out.println("Server is running....");
+            JOptionPane.showMessageDialog(null, "Server started!");
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Cannot start server!");
         }
     }
 
