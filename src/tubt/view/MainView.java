@@ -934,6 +934,7 @@ public class MainView extends javax.swing.JFrame {
         }
         tblRegistration.setModel(tblRegistrationModel);
         tblRegistration.updateUI();
+        
     }
 
     private boolean checkDuplicateID(String id) {
